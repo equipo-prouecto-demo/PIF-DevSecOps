@@ -7,7 +7,8 @@ useDefault = true
 description = "Permitir archivos de prueba y valores conocidos de ejemplo"
 paths = [
   '''backend/tests/.*''',
-  '''scripts/verificar.*\.sh'''
+  '''scripts/verificar.*\.sh''',
+  '''guia-09/manifests/db/secret\.yml'''
 ]
 regexes = [
   '''EXAMPLEKEY''',
