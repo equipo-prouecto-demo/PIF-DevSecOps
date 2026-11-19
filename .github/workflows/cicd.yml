@@ -293,11 +293,12 @@ jobs:
 
       - name: Escaneo bloqueante de secretos
         run: |
-          wget -qO gitleaks.tar.gz https://github.com/gitleaks/gitleaks/releases/download/v8.24.3/gitleaks_8.24.3_linux_x64.tar.gz
+          VER="8.24.3"
+          URL="https://github.com/gitleaks/gitleaks/releases/download"
+          wget -qO gitleaks.tar.gz "${URL}/v${VER}/gitleaks_${VER}_linux_x64.tar.gz"
           tar -xzf gitleaks.tar.gz gitleaks
-          ./gitleaks detect --source . --redact -v --exit-code 2 --report-format sarif --report-path results.sarif
-          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: false
-          GITLEAKS_ARGS: "--source . --redact -v --exit-code 2 --report-format sarif --report-path results.sarif"
+          ./gitleaks detect --source . --redact -v --exit-code 2 \
+            --report-format sarif --report-path results.sarif
 
       - name: Resumen de Andon Cord
         if: always()
