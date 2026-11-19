@@ -44,7 +44,7 @@ jobs:
               -v "$PWD:/work" \
               -w /work \
               hadolint/hadolint:v2.15.1 \
-              hadolint --format json --failure-threshold none \
+              hadolint --format json --no-fail \
               "/work/${file#./}" > "reports/hadolint/${report}.json"
           done
 
