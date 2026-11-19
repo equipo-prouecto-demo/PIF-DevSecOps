@@ -4,6 +4,7 @@ set -euo pipefail
 DEFECTDOJO_URL="${DEFECTDOJO_URL:-http://localhost:8080}"
 API_KEY="${DEFECTDOJO_API_KEY:-}"
 ENGAGEMENT_ID="${DEFECTDOJO_ENGAGEMENT_ID:-}"
+REPORTS_DIR="${REPORTS_DIR:-reports}"
 
 if [[ -z "$API_KEY" || -z "$ENGAGEMENT_ID" ]]; then
     echo "[ERROR] Configurá DEFECTDOJO_API_KEY y DEFECTDOJO_ENGAGEMENT_ID."
@@ -20,10 +21,10 @@ importar_reporte() {
 
     if [[ ! -f "$archivo" ]]; then
         echo "[WARN] No se encontró: $archivo"
-        return
+        return 0
     fi
 
-    echo "[INFO] Importando $archivo..."
+    echo "[INFO] Importando $archivo con parser $parser..."
 
     curl --fail-with-body --silent --show-error \
         -X POST "$DEFECTDOJO_URL/api/v2/import-scan/" \
@@ -35,13 +36,12 @@ importar_reporte() {
         -F "verified=false"
 
     echo ""
+    echo "[OK] Importación completada: $archivo"
 }
 
-importar_reporte "zap-report.json" "ZAP Scan"
-importar_reporte "threagile-results.json" "Threagile"
-importar_reporte "semgrep-results.json" "Semgrep JSON Report"
-importar_reporte "trivy-results.json" "Trivy Scan"
-importar_reporte "gitleaks-report.json" "Gitleaks Scan"
+importar_reporte "$REPORTS_DIR/semgrep-results.json" "Semgrep JSON Report"
+importar_reporte "$REPORTS_DIR/trivy-results.json" "Trivy Scan"
+importar_reporte "$REPORTS_DIR/gitleaks-report.json" "Gitleaks Scan"
 
 echo ""
 echo "[OK] Proceso de importación finalizado."
