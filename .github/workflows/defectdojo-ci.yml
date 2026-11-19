@@ -47,3 +47,9 @@ jobs:
           test -n "$DEFECTDOJO_ENGAGEMENT_ID"
           test -n "$DEFECTDOJO_URL"
           echo "Configuración de DefectDojo encontrada."
+      - name: Importar reportes en DefectDojo
+        env:
+          DEFECTDOJO_API_KEY: ${{ secrets.DEFECTDOJO_API_KEY }}
+          DEFECTDOJO_ENGAGEMENT_ID: ${{ vars.DEFECTDOJO_ENGAGEMENT_ID }}
+          DEFECTDOJO_URL: ${{ vars.DEFECTDOJO_URL }}
+        run: bash scripts/verificar-defectdojo.sh
