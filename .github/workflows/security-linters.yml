@@ -1,0 +1,130 @@
+name: Security Linters
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - 'feature/**'
+      - 'integracion/**'
+  pull_request:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  hadolint:
+    name: Hadolint - Dockerfiles
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Scan Dockerfiles
+        shell: bash
+        run: |
+          mkdir -p reports/hadolint
+
+          find . -type f \( -name 'Dockerfile' -o -name 'Dockerfile.*' \) \
+            -not -path './.git/*' \
+            -not -path './reports/*' \
+            -print0 |
+          while IFS= read -r -d '' file; do
+            report="${file#./}"
+            report="${report//\//__}"
+
+            echo "Analizando: $file"
+
+            docker run --rm \
+              -v "$PWD:/work" \
+              -w /work \
+              hadolint/hadolint:v2.15.1 \
+              hadolint --format json --failure-threshold none \
+              "/work/${file#./}" > "reports/hadolint/${report}.json"
+          done
+
+          echo "Dockerfiles analizados:"
+          find reports/hadolint -type f -name '*.json' | wc -l
+
+      - name: Upload Hadolint reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hadolint-reports
+          path: reports/hadolint/
+          if-no-files-found: warn
+
+  kube-linter:
+    name: Kube-linter - Kubernetes
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v4.3.0
+
+      - name: Prepare reports and render Helm charts
+        shell: bash
+        run: |
+          mkdir -p reports/kube-linter
+
+          helm template tp12 ./devops-tp12/chart \
+            -f ./devops-tp12/values-local.yaml \
+            > reports/kube-linter/devops-tp12-rendered.yaml
+
+          helm template portfolio ./guia-10/devops-portfolio \
+            -f ./guia-10/values-prod.yaml \
+            > reports/kube-linter/guia-10-rendered.yaml
+
+      - name: Run Kube-linter
+        shell: bash
+        run: |
+          set -e
+
+          lint_target() {
+            local target="$1"
+            local report="$2"
+
+            echo "Analizando: $target"
+
+            docker run --rm \
+              -v "$PWD:/work" \
+              -w /work \
+              stackrox/kube-linter:v0.8.3 \
+              lint "/work/$target" --format json > "$report" || true
+
+            jq -e . "$report" > /dev/null
+          }
+
+          lint_target \
+            "guia-09/manifests" \
+            "reports/kube-linter/guia-09-report.json"
+
+          lint_target \
+            "devops-tp12/monitoring-k8s-manifests.yaml" \
+            "reports/kube-linter/monitoring-report.json"
+
+          lint_target \
+            "reports/kube-linter/devops-tp12-rendered.yaml" \
+            "reports/kube-linter/devops-tp12-report.json"
+
+          lint_target \
+            "reports/kube-linter/guia-10-rendered.yaml" \
+            "reports/kube-linter/guia-10-report.json"
+
+      - name: Upload Kube-linter reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kube-linter-reports
+          path: reports/kube-linter/
+          if-no-files-found: warn
