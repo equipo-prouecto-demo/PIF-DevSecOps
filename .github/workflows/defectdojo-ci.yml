@@ -1,0 +1,49 @@
+name: DefectDojo - Centralización de Vulnerabilidades
+
+on:
+  workflow_run:
+    workflows:
+      - CI/CD Pipeline
+      - DevSecOps - Semgrep SAST Scan
+    types:
+      - completed
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  import-defectdojo:
+    name: Importar reportes a DefectDojo
+    runs-on: self-hosted
+    if: github.event.workflow_run.conclusion != 'cancelled'
+
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      - name: Descargar reportes del workflow finalizado
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+          pattern: '*'
+          path: reports
+          merge-multiple: true
+
+      - name: Mostrar reportes descargados
+        run: |
+          echo "Workflow: ${{ github.event.workflow_run.name }}"
+          echo "Run ID: ${{ github.event.workflow_run.id }}"
+          find reports -type f -maxdepth 3 -print
+
+      - name: Verificar configuración de DefectDojo
+        env:
+          DEFECTDOJO_API_KEY: ${{ secrets.DEFECTDOJO_API_KEY }}
+          DEFECTDOJO_ENGAGEMENT_ID: ${{ vars.DEFECTDOJO_ENGAGEMENT_ID }}
+          DEFECTDOJO_URL: ${{ vars.DEFECTDOJO_URL }}
+        run: |
+          test -n "$DEFECTDOJO_API_KEY"
+          test -n "$DEFECTDOJO_ENGAGEMENT_ID"
+          test -n "$DEFECTDOJO_URL"
+          echo "Configuración de DefectDojo encontrada."
