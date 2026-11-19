@@ -1,3 +1,70 @@
+## TP18 — Puesta en marcha de DefectDojo y Runner Self-Hosted
+
+La integración con OWASP DefectDojo utiliza una instancia local ejecutada mediante Docker Compose y un runner self-hosted de GitHub Actions instalado en WSL.
+
+### 1. Iniciar DefectDojo
+
+Desde una terminal de WSL:
+
+```bash
+cd ~/django-DefectDojo
+docker compose up -d
+```
+
+Comprobar que los contenedores estén funcionando:
+
+```bash
+docker compose ps
+```
+
+Interfaz web:
+
+```text
+http://localhost:8080
+```
+
+Ingresar con las credenciales de administrador configuradas durante la instalación.
+
+### 2. Iniciar el Runner Self-Hosted
+
+Abrir una segunda terminal de WSL:
+
+```bash
+cd ~/actions-runner
+./run.sh
+```
+
+El runner debe permanecer ejecutándose y mostrar:
+
+```text
+Connected to GitHub
+Listening for Jobs
+```
+
+El runner permite que GitHub Actions se comunique con la instancia local de DefectDojo.
+
+### 3. Verificar el funcionamiento
+
+- Comprobar que DefectDojo esté disponible en `http://localhost:8080`.
+- Verificar que los contenedores estén activos mediante `docker compose ps`.
+- Confirmar que el runner aparezca como `Online` en GitHub → Settings → Actions → Runners.
+
+### 4. Detener los servicios
+
+Para detener DefectDojo:
+
+```bash
+cd ~/django-DefectDojo
+docker compose down
+```
+
+Para detener el runner, presionar `Ctrl + C` en su terminal.
+
+**Importante:** los datos de DefectDojo se conservan en los volúmenes de Docker. No utilizar `docker compose down -v`, ya que eliminaría esos volúmenes.
+
+Cuando se vuelva a iniciar el entorno, no es necesario reinstalar ni registrar nuevamente el runner. Basta con ejecutar los pasos anteriores.
+
+
 # TP17 – Secret Scanning con Gitleaks
 
 Se incorpora Gitleaks al pipeline CI/CD para detectar posibles credenciales y secretos expuestos en el repositorio.
